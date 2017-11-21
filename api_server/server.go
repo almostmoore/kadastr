@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"time"
+	"github.com/iamsalnikov/kadastr/parser"
 )
 
 type Server struct {
@@ -20,9 +21,15 @@ type Server struct {
 func (s *Server) Run() {
 	r := mux.NewRouter()
 
-	featureController := NewFeatureController(s.Mongo)
+	featureTaskSender, err := parser.NewFeatureTaskSender(s.AMQP)
+	if err != nil {
+		log.Fatalf("Не удалось создать отправщика в очередь парсера: %s\n", err.Error())
+	}
 
-	r.HandleFunc("/listparsing", featureController.GetListParsing)
+	featureController := NewFeatureController(s.Mongo, featureTaskSender)
+
+	r.HandleFunc("/listparsing", featureController.GetListParsing).Methods(http.MethodGet)
+	r.HandleFunc("/add-parsing", featureController.AddParsingTask).Methods(http.MethodPost)
 
 	srv := &http.Server{
 		Handler:      handlers.LoggingHandler(os.Stdout, r),
