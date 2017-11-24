@@ -2,25 +2,26 @@ package api_server
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/iamsalnikov/kadastr/feature"
 	"gopkg.in/mgo.v2"
 	"net/http"
 	"github.com/iamsalnikov/kadastr/parser"
 	"github.com/iamsalnikov/kadastr/api_server/messages"
 	"log"
-	"bytes"
+	"strconv"
 )
 
 type FeatureController struct {
-	session *mgo.Session
-	sender *parser.FeatureTaskSender
+	session           *mgo.Session
+	featureTaskSender *parser.FeatureTaskSender
+	quarterCheckSender *parser.QuarterCheckSender
 }
 
-func NewFeatureController(session *mgo.Session, sender *parser.FeatureTaskSender) FeatureController {
+func NewFeatureController(session *mgo.Session, fts *parser.FeatureTaskSender, qcs *parser.QuarterCheckSender) FeatureController {
 	return FeatureController{
-		session: session,
-		sender: sender,
+		session:            session,
+		featureTaskSender:  fts,
+		quarterCheckSender: qcs,
 	}
 }
 
@@ -30,18 +31,19 @@ func (f *FeatureController) GetListParsing(resp http.ResponseWriter, req *http.R
 
 	resp.WriteHeader(http.StatusOK)
 	resp.Header().Add("Content-Type", "application/json")
-	answer, _ := json.Marshal(parsingTasks)
 
-	fmt.Fprintln(resp, string(answer))
+	encoder := json.NewEncoder(resp)
+	encoder.Encode(parsingTasks)
 }
 
 func (f *FeatureController) AddParsingTask(resp http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 	quarters := make([]string, 0)
-	decoder := json.NewDecoder(req.Body)
-	err := decoder.Decode(&quarters)
 
 	resp.Header().Add("Content-Type", "application/json")
+
+	decoder := json.NewDecoder(req.Body)
+	err := decoder.Decode(&quarters)
 	if err != nil {
 		resp.WriteHeader(http.StatusInternalServerError)
 	}
@@ -57,7 +59,7 @@ func (f *FeatureController) AddParsingTask(resp http.ResponseWriter, req *http.R
 			answer.NotAdded = append(answer.NotAdded, quarter)
 			log.Printf("Квартал %s - не добавлен (%s)\n", quarter, err.Error())
 		} else if sendToParsing {
-			err = f.sender.Send(task.ID)
+			err = f.featureTaskSender.Send(task.ID)
 			if err != nil {
 				answer.NotSent = append(answer.NotSent, quarter)
 				log.Printf("Квартал %s - не отправлен на парсинг (%s)\n", quarter, err.Error())
@@ -71,9 +73,41 @@ func (f *FeatureController) AddParsingTask(resp http.ResponseWriter, req *http.R
 		}
 	}
 
-	jsonAnswer := bytes.NewBufferString("")
-	encoder := json.NewEncoder(jsonAnswer)
+	encoder := json.NewEncoder(resp)
 	encoder.Encode(answer)
+}
 
-	fmt.Fprintln(resp, jsonAnswer.String())
+func (f *FeatureController) FindFeature(resp http.ResponseWriter, req *http.Request) {
+	quarter := req.URL.Query().Get("quarter")
+	square := req.URL.Query().Get("square")
+
+	repo := feature.NewFeatureRepository(f.session)
+	s, _ := strconv.ParseFloat(square, 64)
+
+	encoder := json.NewEncoder(resp)
+	resp.Header().Add("Content-Type", "application/json")
+
+	if quarter == "" || square == "" {
+		err := messages.Error{
+			Message: "Нужно указать квартал и площадь. Например - 29:08:103701 2578",
+		}
+
+		resp.WriteHeader(http.StatusBadRequest)
+		encoder.Encode(err)
+		return
+	}
+
+	f.quarterCheckSender.Send(quarter)
+
+	features := repo.FindAllByQuarterAndArea(quarter, s)
+	foundedFeatures := make([]messages.FindFeature, 0, len(features))
+
+	for _, ft := range features {
+		foundedFeatures = append(foundedFeatures, messages.FindFeature{
+			CadNumber: ft.CadNumber,
+			Address: ft.Address,
+		})
+	}
+
+	encoder.Encode(foundedFeatures)
 }

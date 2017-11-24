@@ -26,10 +26,16 @@ func (s *Server) Run() {
 		log.Fatalf("Не удалось создать отправщика в очередь парсера: %s\n", err.Error())
 	}
 
-	featureController := NewFeatureController(s.Mongo, featureTaskSender)
+	quarterCheckSender, err := parser.NewQuarterCheckSender(s.AMQP)
+	if err != nil {
+		log.Fatalf("Не удалось создать отправщика в очередь квартального проверяльщика: %s\n", err.Error())
+	}
+
+	featureController := NewFeatureController(s.Mongo, featureTaskSender, quarterCheckSender)
 
 	r.HandleFunc("/listparsing", featureController.GetListParsing).Methods(http.MethodGet)
 	r.HandleFunc("/add-parsing", featureController.AddParsingTask).Methods(http.MethodPost)
+	r.HandleFunc("/search", featureController.FindFeature).Methods(http.MethodGet)
 
 	srv := &http.Server{
 		Handler:      handlers.LoggingHandler(os.Stdout, r),
