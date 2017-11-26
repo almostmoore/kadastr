@@ -33,7 +33,7 @@ func (s *Server) Run() {
 
 	featureController := NewFeatureController(s.Mongo, featureTaskSender, quarterCheckSender)
 
-	r.HandleFunc("/listparsing", featureController.GetListParsing).Methods(http.MethodGet)
+	r.HandleFunc("/list-parsing", featureController.GetListParsing).Methods(http.MethodGet)
 	r.HandleFunc("/add-parsing", featureController.AddParsingTask).Methods(http.MethodPost)
 	r.HandleFunc("/search", featureController.FindFeature).Methods(http.MethodGet)
 

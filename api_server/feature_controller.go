@@ -27,13 +27,22 @@ func NewFeatureController(session *mgo.Session, fts *parser.FeatureTaskSender, q
 
 func (f *FeatureController) GetListParsing(resp http.ResponseWriter, req *http.Request) {
 	repo := feature.NewParsingTaskRepository(f.session)
-	parsingTasks := repo.FindAll()
+	tasks := repo.FindAll()
+
+	responseTasks := make([]messages.ParsingTask, 0, len(tasks))
+	for _, task := range tasks {
+		responseTasks = append(responseTasks, messages.ParsingTask{
+			Quarter: task.Quarter,
+			TextStatus: task.TextStatus,
+			Status: task.Status,
+		})
+	}
 
 	resp.WriteHeader(http.StatusOK)
 	resp.Header().Add("Content-Type", "application/json")
 
 	encoder := json.NewEncoder(resp)
-	encoder.Encode(parsingTasks)
+	encoder.Encode(responseTasks)
 }
 
 func (f *FeatureController) AddParsingTask(resp http.ResponseWriter, req *http.Request) {
