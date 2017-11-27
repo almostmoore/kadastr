@@ -4,49 +4,48 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/iamsalnikov/kadastr/feature"
-	"github.com/iamsalnikov/kadastr/parser"
-	"gopkg.in/mgo.v2"
 	"gopkg.in/telegram-bot-api.v4"
 	"regexp"
+	"github.com/iamsalnikov/kadastr/api_server"
+	"strings"
 )
 
 type AddParsingTaskProcessor struct {
-	session           *mgo.Session
+	ApiClient         *api_server.Client
 	quarterRegexp     *regexp.Regexp
 	leadingZeroRegexp *regexp.Regexp
-	sender            *parser.FeatureTaskSender
 }
 
-func NewAddParsingTaskProcessor(session *mgo.Session, sender *parser.FeatureTaskSender) AddParsingTaskProcessor {
+func NewAddParsingTaskProcessor(apiClient *api_server.Client) AddParsingTaskProcessor {
 	return AddParsingTaskProcessor{
-		session:           session,
+		ApiClient:         apiClient,
 		quarterRegexp:     regexp.MustCompile("(\\d+?:\\d+?:\\d+)\\s*"),
 		leadingZeroRegexp: regexp.MustCompile("(:)(0+)(\\d+)"),
-		sender:            sender,
 	}
 }
 
 func (aptp AddParsingTaskProcessor) Run(upd *tgbotapi.Update) (tgbotapi.MessageConfig, error) {
 	quarters := aptp.extractQuarters(upd.Message.CommandArguments())
-	repo := feature.NewParsingTaskRepository(aptp.session)
+	addResult, err := aptp.ApiClient.AddParsingTask(quarters)
+	if err != nil {
+		return tgbotapi.NewMessage(upd.Message.Chat.ID, "При обращении к серверу произошла ошибка\n"), nil
+	}
 
 	answer := bytes.NewBufferString("Реузльтат добавления кварталов на парсинг:\n")
 
-	for _, quarter := range quarters {
-		task, sendToParsing, err := parser.EnsureParsingTask(&repo, quarter)
+	answer.WriteString(fmt.Sprintf("*Добавлено на парсинг - %d*", len(addResult.Added)))
+	if len(addResult.Added) > 0 {
+		answer.WriteString(": " + strings.Join(addResult.Added, ", "))
+	}
 
-		if err != nil {
-			answer.WriteString(fmt.Sprintf("\n*%s* - не добавлен (%s)", quarter, err.Error()))
-		} else if sendToParsing {
-			err = aptp.sender.Send(task.ID)
-			if err != nil {
-				answer.WriteString(fmt.Sprintf("\n*%s* - не отправлен на парсинг (%s)", quarter, err.Error()))
-			} else {
-				answer.WriteString(fmt.Sprintf("\n*%s* - добавлен", quarter))
-			}
-		} else {
-			answer.WriteString(fmt.Sprintf("\n*%s* - добавлен", quarter))
-		}
+	answer.WriteString(fmt.Sprintf("\n*Не добавлено на парсинг - %d*", len(addResult.NotAdded)))
+	if len(addResult.NotAdded) > 0 {
+		answer.WriteString(": " + strings.Join(addResult.Added, ", "))
+	}
+
+	answer.WriteString(fmt.Sprintf("\n*Не отправлено на парсинг - %d*", len(addResult.NotSent)))
+	if len(addResult.NotSent) > 0 {
+		answer.WriteString(": " + strings.Join(addResult.NotSent, ", "))
 	}
 
 	return tgbotapi.NewMessage(upd.Message.Chat.ID, answer.String()), nil

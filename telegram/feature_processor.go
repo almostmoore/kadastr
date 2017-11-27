@@ -3,44 +3,37 @@ package telegram
 import (
 	"bytes"
 	"fmt"
-	"github.com/iamsalnikov/kadastr/feature"
-	"github.com/iamsalnikov/kadastr/parser"
-	"gopkg.in/mgo.v2"
 	"gopkg.in/telegram-bot-api.v4"
 	"regexp"
-	"strconv"
 	"strings"
+	"github.com/iamsalnikov/kadastr/api_server"
 )
 
 type FeatureProcessor struct {
-	session        *mgo.Session
-	qsRegExp       *regexp.Regexp
-	quarterChecker *parser.QuarterCheckSender
+	ApiClient *api_server.Client
+	qsRegExp  *regexp.Regexp
 }
 
-func NewFeatureProcessor(session *mgo.Session, quarterChecker *parser.QuarterCheckSender) FeatureProcessor {
+func NewFeatureProcessor(apiClient *api_server.Client) FeatureProcessor {
 	return FeatureProcessor{
-		session:        session,
-		qsRegExp:       regexp.MustCompile("\\s*(\\d+?:\\d+?:\\d+)\\s+(\\d+[.,]?\\d*)"),
-		quarterChecker: quarterChecker,
+		ApiClient: apiClient,
+		qsRegExp:  regexp.MustCompile("\\s*(\\d+?:\\d+?:\\d+)\\s+(\\d+[.,]?\\d*)"),
 	}
 }
 
 func (f FeatureProcessor) Run(upd *tgbotapi.Update) (tgbotapi.MessageConfig, error) {
 	quarter, square := f.extractQuarterAndSquare(upd.Message.Text)
 
-	repo := feature.NewFeatureRepository(f.session)
-	s, _ := strconv.ParseFloat(square, 64)
-
-	if quarter == "" || square == "" {
-		return tgbotapi.NewMessage(upd.Message.Chat.ID, "Нужно указать квартал и площадь. Например - 29:08:103701 2578\n\n/help - справка"), nil
+	features, searchError, err := f.ApiClient.FindFeature(quarter, square)
+	if err != nil {
+		return tgbotapi.NewMessage(upd.Message.Chat.ID, "Произошла ошибка при обращении к серверу\n"), nil
 	}
 
-	f.quarterChecker.Send(quarter)
+	if searchError.Message != "" {
+		return tgbotapi.NewMessage(upd.Message.Chat.ID, searchError.Message), nil
+	}
 
-	answer := bytes.NewBufferString(fmt.Sprintf("Поиск для кадастрового квартала *%s* и площади *%.2f*\n", quarter, s))
-	features := repo.FindAllByQuarterAndArea(quarter, s)
-
+	answer := bytes.NewBufferString(fmt.Sprintf("Поиск для кадастрового квартала *%s* и площади *%s*\n", quarter, square))
 	for _, f := range features {
 		answer.WriteString(fmt.Sprintf("\n*%s* - %s", f.CadNumber, f.Address))
 	}

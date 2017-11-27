@@ -1,17 +1,14 @@
 package telegram
 
 import (
-	"github.com/iamsalnikov/kadastr/parser"
-	"github.com/streadway/amqp"
-	"gopkg.in/mgo.v2"
 	"gopkg.in/telegram-bot-api.v4"
 	"log"
+	"github.com/iamsalnikov/kadastr/api_server"
 )
 
 type Server struct {
 	APIToken      string
-	Mongo         *mgo.Session
-	AMQP          *amqp.Connection
+	ApiClient     *api_server.Client
 	commandRouter *CommandRouter
 }
 
@@ -45,24 +42,14 @@ func (s *Server) Run() {
 func (s *Server) BindCommands() {
 	s.commandRouter = &CommandRouter{}
 
-	featureTaskSender, err := parser.NewFeatureTaskSender(s.AMQP)
-	if err != nil {
-		log.Fatalf("Не удалось создать отправщика в очередь парсера: %s\n", err.Error())
-	}
-
-	quarterCheckSender, err := parser.NewQuarterCheckSender(s.AMQP)
-	if err != nil {
-		log.Fatalf("Не удалось создать отправщика в очередь квартального проверяльщика: %s\n", err.Error())
-	}
-
-	featureProcessor := NewFeatureProcessor(s.Mongo, quarterCheckSender)
+	featureProcessor := NewFeatureProcessor(s.ApiClient)
 	s.commandRouter.AddProcessor("search", featureProcessor)
 	s.commandRouter.SetDefaultCommand("search")
 
-	addParsingTaskProcessor := NewAddParsingTaskProcessor(s.Mongo, featureTaskSender)
+	addParsingTaskProcessor := NewAddParsingTaskProcessor(s.ApiClient)
 	s.commandRouter.AddProcessor("doparsing", addParsingTaskProcessor)
 
-	listParsingTaskProcessor := NewListParsingTaskProcessor(s.Mongo)
+	listParsingTaskProcessor := NewListParsingTaskProcessor(s.ApiClient)
 	s.commandRouter.AddProcessor("listparsing", listParsingTaskProcessor)
 
 	helpProcessor := HelpProcessor{}

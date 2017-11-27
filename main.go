@@ -18,6 +18,8 @@ var rabbitConnectionString string
 var mode string
 var tgToken string
 var apiAddr string
+var session *mgo.Session
+var rabbitConnection *amqp.Connection
 
 func main() {
 	flag.StringVar(&mongoConnectionString, "mongo", os.Getenv("MONGO"), "")
@@ -27,7 +29,60 @@ func main() {
 	flag.StringVar(&apiAddr, "addr", os.Getenv("ADDR"), "0.0.0.0:8080")
 	flag.Parse()
 
-	session, err := mgo.Dial("mongodb://" + mongoConnectionString)
+	initEnvironmentRoutine(mode)
+	if mode != "tg" {
+		go dbHealthCheck()
+	}
+
+	// Feature parser worker
+	if mode == "rb" {
+		worker := &parser.FeatureParserCmd{
+			Conn:    rabbitConnection,
+			Session: session,
+		}
+
+		worker.Run()
+	}
+
+	// Quarter checker worker
+	if mode == "quarter" {
+		worker := &parser.QuarterCheckerCmd{
+			Conn:    rabbitConnection,
+			Session: session,
+		}
+
+		worker.Run()
+	}
+
+	// Telegram client
+	if mode == "tg" {
+		tg := &telegram.Server{
+			APIToken: tgToken,
+			ApiClient: api_server.NewClient("http://" + apiAddr),
+		}
+
+		tg.Run()
+	}
+
+	// Api server
+	if mode == "api" {
+		api := &api_server.Server{
+			Mongo: session,
+			AMQP:  rabbitConnection,
+			Addr:  apiAddr,
+		}
+
+		api.Run()
+	}
+}
+
+func initEnvironmentRoutine(environment string) {
+	if environment == "tg" {
+		return
+	}
+
+	var err error
+	session, err = mgo.Dial("mongodb://" + mongoConnectionString)
 	if err != nil {
 		log.Fatal("Не удалось получить доступ в БД", err)
 	}
@@ -39,65 +94,23 @@ func main() {
 	repos.CreateIndexes(session)
 
 	// Rabbit connection
-	rConn, err := amqp.Dial("amqp://" + rabbitConnectionString)
+	rabbitConnection, err = amqp.Dial("amqp://" + rabbitConnectionString)
 	if err != nil {
 		log.Fatal("Не удалось соединиться с раббитом", err)
 	}
+}
 
-	go func() {
-		timer := time.Tick(10 * time.Second)
-		for {
-			select {
-			case <-timer:
-				err := session.Ping()
-				if err != nil {
-					log.Println("Can not ping DB", err.Error())
-					session.Refresh()
-				}
+func dbHealthCheck() {
+	timer := time.Tick(10 * time.Second)
+	for {
+		select {
+		case <-timer:
+			err := session.Ping()
+			if err != nil {
+				log.Println("Can not ping DB", err.Error())
+				session.Refresh()
 			}
-
-		}
-	}()
-
-	// Feature parser worker
-	if mode == "rb" {
-		worker := &parser.FeatureParserCmd{
-			Conn:    rConn,
-			Session: session,
 		}
 
-		worker.Run()
-	}
-
-	// Quarter checker worker
-	if mode == "quarter" {
-		worker := &parser.QuarterCheckerCmd{
-			Conn:    rConn,
-			Session: session,
-		}
-
-		worker.Run()
-	}
-
-	// Telegram client
-	if mode == "tg" {
-		tg := &telegram.Server{
-			APIToken: tgToken,
-			Mongo:    session,
-			AMQP:     rConn,
-		}
-
-		tg.Run()
-	}
-
-	// Api server
-	if mode == "api" {
-		api := &api_server.Server{
-			Mongo: session,
-			AMQP:  rConn,
-			Addr:  apiAddr,
-		}
-
-		api.Run()
 	}
 }

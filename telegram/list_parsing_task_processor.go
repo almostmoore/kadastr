@@ -3,24 +3,25 @@ package telegram
 import (
 	"bytes"
 	"fmt"
-	"github.com/iamsalnikov/kadastr/feature"
-	"gopkg.in/mgo.v2"
 	"gopkg.in/telegram-bot-api.v4"
+	"github.com/iamsalnikov/kadastr/api_server"
 )
 
 type ListParsingTaskProcessor struct {
-	session *mgo.Session
+	ApiClient *api_server.Client
 }
 
-func NewListParsingTaskProcessor(session *mgo.Session) ListParsingTaskProcessor {
+func NewListParsingTaskProcessor(apiClient *api_server.Client) ListParsingTaskProcessor {
 	return ListParsingTaskProcessor{
-		session: session,
+		ApiClient: apiClient,
 	}
 }
 
 func (lptp ListParsingTaskProcessor) Run(upd *tgbotapi.Update) (tgbotapi.MessageConfig, error) {
-	repo := feature.NewParsingTaskRepository(lptp.session)
-	parsingTasks := repo.FindAll()
+	parsingTasks, err := lptp.ApiClient.GetParsingTasksList()
+	if err != nil {
+		return tgbotapi.NewMessage(upd.Message.Chat.ID, "При обращении к серверу произошла ошибка\n"), nil
+	}
 
 	answer := bytes.NewBufferString("Кварталы на парсинге:\n")
 

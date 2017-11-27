@@ -72,7 +72,7 @@ func (c *Client) AddParsingTask(quarters []string) (messages.AddParsingTaskAnswe
 	return answer, err
 }
 
-func (c *Client) FindFeature(quarter, square string) ([]messages.FindFeature, error) {
+func (c *Client) FindFeature(quarter, square string) ([]messages.FindFeature, messages.Error, error) {
 	features := make([]messages.FindFeature, 0)
 	searchError := messages.Error{}
 
@@ -83,12 +83,12 @@ func (c *Client) FindFeature(quarter, square string) ([]messages.FindFeature, er
 
 	req, err := http.NewRequest(http.MethodGet, c.ApiServerAddress + "/search?" + urlValues.Encode(), nil)
 	if err != nil {
-		return features, err
+		return features, searchError, err
 	}
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return features, err
+		return features, searchError, err
 	}
 
 	defer resp.Body.Close()
@@ -96,13 +96,10 @@ func (c *Client) FindFeature(quarter, square string) ([]messages.FindFeature, er
 
 	if resp.StatusCode != http.StatusOK {
 		err = decoder.Decode(&searchError)
-		if err == nil && searchError.Message != "" {
-			err = errors.New(searchError.Message)
-		}
 
-		return features, err
+		return features, searchError, err
 	}
 
 	err = decoder.Decode(&features)
-	return features, err
+	return features, searchError, err
 }
