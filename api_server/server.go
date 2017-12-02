@@ -37,8 +37,11 @@ func (s *Server) Run() {
 	r.HandleFunc("/add-parsing", featureController.AddParsingTask).Methods(http.MethodPost)
 	r.HandleFunc("/search", featureController.FindFeature).Methods(http.MethodGet)
 
+	origins := handlers.AllowedOrigins([]string{"*"})
+	cors := handlers.CORS(origins)
+
 	srv := &http.Server{
-		Handler:      handlers.LoggingHandler(os.Stdout, r),
+		Handler:      cors(handlers.LoggingHandler(os.Stdout, r)),
 		Addr:         s.Addr,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
