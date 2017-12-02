@@ -1,9 +1,6 @@
-FROM golang:1.9.0
+FROM alpine:3.5
 
-COPY . $GOPATH/src/github.com/iamsalnikov/kadastr
+RUN apk add --no-cache ca-certificates && update-ca-certificates
 
-RUN go get -u github.com/govend/govend &&\
-    cd $GOPATH/src/github.com/iamsalnikov/kadastr &&\
-    govend -v &&\
-    go build &&\
-    go install github.com/iamsalnikov/kadastr
+ADD kadastr /
+RUN chmod +x /kadastr

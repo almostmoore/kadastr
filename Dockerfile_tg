@@ -1,0 +1,3 @@
+FROM iamsalnikov/kadastr:latest
+
+CMD ./kadastr -mode tg -tgtoken $TG_TOKEN -addr $ADDR

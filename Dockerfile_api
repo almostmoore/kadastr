@@ -1,0 +1,5 @@
+FROM iamsalnikov/kadastr:latest
+
+CMD ./kadastr -mode api -mongo $MONGO -rabbit $RABBIT -addr 0.0.0.0:80
+
+EXPOSE 80
