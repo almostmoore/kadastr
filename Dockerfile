@@ -7,5 +7,3 @@ RUN go get -u github.com/govend/govend &&\
     govend -v &&\
     go build &&\
     go install github.com/iamsalnikov/kadastr
-
-CMD kadastr -mode $MODE -mongo $MONGO -rabbit $RABBIT -tgtoken $TG_TOKEN

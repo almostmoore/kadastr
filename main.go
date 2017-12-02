@@ -35,7 +35,7 @@ func main() {
 	}
 
 	// Feature parser worker
-	if mode == "rb" {
+	if mode == "fp" {
 		worker := &parser.FeatureParserCmd{
 			Conn:    rabbitConnection,
 			Session: session,
