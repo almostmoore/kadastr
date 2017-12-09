@@ -1,4 +1,4 @@
-FROM iamsalnikov/kadastr:latest
+FROM almostmoore/kadastr:latest
 
 CMD ./kadastr -mode api -mongo $MONGO -rabbit $RABBIT -addr 0.0.0.0:80
 
