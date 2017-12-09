@@ -2,11 +2,11 @@ package api_server
 
 import (
 	"encoding/json"
-	"github.com/iamsalnikov/kadastr/feature"
+	"github.com/almostmoore/kadastr/feature"
 	"gopkg.in/mgo.v2"
 	"net/http"
-	"github.com/iamsalnikov/kadastr/parser"
-	"github.com/iamsalnikov/kadastr/api_server/messages"
+	"github.com/almostmoore/kadastr/parser"
+	"github.com/almostmoore/kadastr/api_server/messages"
 	"log"
 	"strconv"
 )

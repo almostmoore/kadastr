@@ -3,10 +3,10 @@ package telegram
 import (
 	"bytes"
 	"fmt"
-	"github.com/iamsalnikov/kadastr/feature"
+	"github.com/almostmoore/kadastr/feature"
 	"gopkg.in/telegram-bot-api.v4"
 	"regexp"
-	"github.com/iamsalnikov/kadastr/api_server"
+	"github.com/almostmoore/kadastr/api_server"
 	"strings"
 )
 

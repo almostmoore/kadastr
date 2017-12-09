@@ -6,7 +6,7 @@ import (
 	"gopkg.in/telegram-bot-api.v4"
 	"regexp"
 	"strings"
-	"github.com/iamsalnikov/kadastr/api_server"
+	"github.com/almostmoore/kadastr/api_server"
 )
 
 type FeatureProcessor struct {

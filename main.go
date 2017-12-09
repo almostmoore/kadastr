@@ -2,10 +2,10 @@ package main
 
 import (
 	"flag"
-	"github.com/iamsalnikov/kadastr/api_server"
-	"github.com/iamsalnikov/kadastr/parser"
-	"github.com/iamsalnikov/kadastr/repos"
-	"github.com/iamsalnikov/kadastr/telegram"
+	"github.com/almostmoore/kadastr/api_server"
+	"github.com/almostmoore/kadastr/parser"
+	"github.com/almostmoore/kadastr/repos"
+	"github.com/almostmoore/kadastr/telegram"
 	"github.com/streadway/amqp"
 	"gopkg.in/mgo.v2"
 	"log"
@@ -26,7 +26,7 @@ func main() {
 	flag.StringVar(&rabbitConnectionString, "rabbit", os.Getenv("RABBIT"), "")
 	flag.StringVar(&tgToken, "tgtoken", os.Getenv("TG_TOKEN"), "")
 	flag.StringVar(&mode, "mode", "tg", "")
-	flag.StringVar(&apiAddr, "addr", os.Getenv("ADDR"), "0.0.0.0:8080")
+	flag.StringVar(&apiAddr, "addr", os.Getenv("ADDR"), "Listen address")
 	flag.Parse()
 
 	initEnvironmentRoutine(mode)

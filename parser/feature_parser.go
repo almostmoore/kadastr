@@ -1,8 +1,8 @@
 package parser
 
 import (
-	"github.com/iamsalnikov/kadastr/feature"
-	"github.com/iamsalnikov/kadastr/rapi"
+	"github.com/almostmoore/kadastr/feature"
+	"github.com/almostmoore/kadastr/rapi"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"log"

@@ -2,7 +2,7 @@ package api_server
 
 import (
 	"net/http"
-	"github.com/iamsalnikov/kadastr/api_server/messages"
+	"github.com/almostmoore/kadastr/api_server/messages"
 	"encoding/json"
 	"bytes"
 	"errors"

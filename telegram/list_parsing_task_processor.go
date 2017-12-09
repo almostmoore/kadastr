@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"gopkg.in/telegram-bot-api.v4"
-	"github.com/iamsalnikov/kadastr/api_server"
+	"github.com/almostmoore/kadastr/api_server"
 )
 
 type ListParsingTaskProcessor struct {

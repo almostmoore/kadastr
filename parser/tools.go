@@ -2,7 +2,7 @@ package parser
 
 import (
 	"errors"
-	"github.com/iamsalnikov/kadastr/feature"
+	"github.com/almostmoore/kadastr/feature"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )

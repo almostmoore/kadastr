@@ -3,7 +3,7 @@ package telegram
 import (
 	"gopkg.in/telegram-bot-api.v4"
 	"log"
-	"github.com/iamsalnikov/kadastr/api_server"
+	"github.com/almostmoore/kadastr/api_server"
 )
 
 type Server struct {

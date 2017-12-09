@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"os"
 	"time"
-	"github.com/iamsalnikov/kadastr/parser"
+	"github.com/almostmoore/kadastr/parser"
 )
 
 type Server struct {

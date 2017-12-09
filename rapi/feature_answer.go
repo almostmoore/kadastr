@@ -1,6 +1,6 @@
 package rapi
 
-import "github.com/iamsalnikov/kadastr/feature"
+import "github.com/almostmoore/kadastr/feature"
 
 type featureAnswer struct {
 	Feature featureDataAnswer `json:"feature,omitempty"`

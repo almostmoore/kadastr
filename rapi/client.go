@@ -2,7 +2,7 @@ package rapi
 
 import (
 	"encoding/json"
-	"github.com/iamsalnikov/kadastr/feature"
+	"github.com/almostmoore/kadastr/feature"
 	"io/ioutil"
 	"log"
 	"net/http"

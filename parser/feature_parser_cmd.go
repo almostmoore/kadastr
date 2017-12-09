@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"github.com/iamsalnikov/kadastr/feature"
+	"github.com/almostmoore/kadastr/feature"
 	"github.com/streadway/amqp"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
