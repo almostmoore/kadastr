@@ -5,7 +5,6 @@ import (
 	"github.com/almostmoore/kadastr/api_server"
 	"github.com/almostmoore/kadastr/parser"
 	"github.com/almostmoore/kadastr/repos"
-	"github.com/almostmoore/kadastr/telegram"
 	"github.com/streadway/amqp"
 	"gopkg.in/mgo.v2"
 	"log"
@@ -29,10 +28,8 @@ func main() {
 	flag.StringVar(&apiAddr, "addr", os.Getenv("ADDR"), "Listen address")
 	flag.Parse()
 
-	initEnvironmentRoutine(mode)
-	if mode != "tg" {
-		go dbHealthCheck()
-	}
+	initEnvironmentRoutine()
+	go dbHealthCheck()
 
 	// Feature parser worker
 	if mode == "fp" {
@@ -54,16 +51,6 @@ func main() {
 		worker.Run()
 	}
 
-	// Telegram client
-	if mode == "tg" {
-		tg := &telegram.Server{
-			APIToken: tgToken,
-			ApiClient: api_server.NewClient("http://" + apiAddr),
-		}
-
-		tg.Run()
-	}
-
 	// Api server
 	if mode == "api" {
 		api := &api_server.Server{
@@ -76,11 +63,7 @@ func main() {
 	}
 }
 
-func initEnvironmentRoutine(environment string) {
-	if environment == "tg" {
-		return
-	}
-
+func initEnvironmentRoutine() {
 	var err error
 	session, err = mgo.Dial("mongodb://" + mongoConnectionString)
 	if err != nil {
